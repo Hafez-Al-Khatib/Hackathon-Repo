@@ -1,0 +1,127 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #1a1a1a;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#FF6B6B", "font": {"color": "white"}, "id": "meal_0", "label": "Meal\n2025-10-04", "shape": "dot", "size": 30, "title": "Meal: meal_0"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_avocado", "label": "Avocado", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_avocado"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_healthy_fats", "label": "Healthy Fats", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_healthy_fats"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_fiber", "label": "Fiber", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_fiber"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_potassium", "label": "Potassium", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_potassium"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_cherry_tomatoes", "label": "Cherry Tomatoes", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_cherry_tomatoes"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_vitamin_c", "label": "Vitamin C", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_vitamin_c"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_vitamin_k", "label": "Vitamin K", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_vitamin_k"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_red_onion", "label": "Red Onion", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_red_onion"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_antioxidants", "label": "Antioxidants", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_antioxidants"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_cucumber", "label": "Cucumber", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_cucumber"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_water", "label": "Water", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_water"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_cilantro", "label": "Cilantro", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_cilantro"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_jalape\u00f1o", "label": "Jalape\u00f1o", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_jalape\u00f1o"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_vitamin_b6", "label": "Vitamin B6", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_vitamin_b6"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_capsaicin", "label": "Capsaicin", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_capsaicin"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_black_pepper", "label": "Black Pepper", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_black_pepper"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_manganese", "label": "Manganese", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_manganese"}, {"color": "#FFE66D", "font": {"color": "white"}, "id": "log_0", "label": "High Energy\n(positive)", "shape": "dot", "size": 20, "title": "UserLog: log_0"}, {"color": "#FF6B6B", "font": {"color": "white"}, "id": "meal_1", "label": "Meal\n2025-10-04", "shape": "dot", "size": 30, "title": "Meal: meal_1"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_chicken_breast", "label": "Chicken Breast", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_chicken_breast"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_protein", "label": "Protein", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_protein"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_low_fat", "label": "Low Fat", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_low_fat"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_broccoli", "label": "Broccoli", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_broccoli"}, {"color": "#4ECDC4", "font": {"color": "white"}, "id": "ingredient_rice", "label": "Rice", "shape": "dot", "size": 20, "title": "Ingredient: ingredient_rice"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_carbohydrates", "label": "Carbohydrates", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_carbohydrates"}, {"color": "#95E1D3", "font": {"color": "white"}, "id": "nutrient_energy", "label": "Energy", "shape": "dot", "size": 20, "title": "Nutrient: nutrient_energy"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_avocado"}, {"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_cherry_tomatoes"}, {"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_red_onion"}, {"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_cucumber"}, {"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_cilantro"}, {"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_jalape\u00f1o"}, {"arrows": "to", "from": "meal_0", "title": "CONTAINS", "to": "ingredient_black_pepper"}, {"arrows": "to", "from": "meal_0", "title": "LOGGED_NEAR", "to": "log_0"}, {"arrows": "to", "from": "ingredient_avocado", "title": "HAS_NUTRIENT", "to": "nutrient_healthy_fats"}, {"arrows": "to", "from": "ingredient_avocado", "title": "HAS_NUTRIENT", "to": "nutrient_fiber"}, {"arrows": "to", "from": "ingredient_avocado", "title": "HAS_NUTRIENT", "to": "nutrient_potassium"}, {"arrows": "to", "from": "ingredient_cherry_tomatoes", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_cherry_tomatoes", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_k"}, {"arrows": "to", "from": "ingredient_cherry_tomatoes", "title": "HAS_NUTRIENT", "to": "nutrient_potassium"}, {"arrows": "to", "from": "ingredient_red_onion", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_red_onion", "title": "HAS_NUTRIENT", "to": "nutrient_fiber"}, {"arrows": "to", "from": "ingredient_red_onion", "title": "HAS_NUTRIENT", "to": "nutrient_antioxidants"}, {"arrows": "to", "from": "ingredient_cucumber", "title": "HAS_NUTRIENT", "to": "nutrient_water"}, {"arrows": "to", "from": "ingredient_cucumber", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_k"}, {"arrows": "to", "from": "ingredient_cucumber", "title": "HAS_NUTRIENT", "to": "nutrient_potassium"}, {"arrows": "to", "from": "ingredient_cilantro", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_k"}, {"arrows": "to", "from": "ingredient_cilantro", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_cilantro", "title": "HAS_NUTRIENT", "to": "nutrient_antioxidants"}, {"arrows": "to", "from": "ingredient_jalape\u00f1o", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_jalape\u00f1o", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_b6"}, {"arrows": "to", "from": "ingredient_jalape\u00f1o", "title": "HAS_NUTRIENT", "to": "nutrient_capsaicin"}, {"arrows": "to", "from": "ingredient_black_pepper", "title": "HAS_NUTRIENT", "to": "nutrient_manganese"}, {"arrows": "to", "from": "ingredient_black_pepper", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_k"}, {"arrows": "to", "from": "ingredient_black_pepper", "title": "HAS_NUTRIENT", "to": "nutrient_antioxidants"}, {"arrows": "to", "from": "meal_1", "title": "CONTAINS", "to": "ingredient_chicken_breast"}, {"arrows": "to", "from": "meal_1", "title": "CONTAINS", "to": "ingredient_broccoli"}, {"arrows": "to", "from": "meal_1", "title": "CONTAINS", "to": "ingredient_rice"}, {"arrows": "to", "from": "ingredient_chicken_breast", "title": "HAS_NUTRIENT", "to": "nutrient_protein"}, {"arrows": "to", "from": "ingredient_chicken_breast", "title": "HAS_NUTRIENT", "to": "nutrient_low_fat"}, {"arrows": "to", "from": "ingredient_broccoli", "title": "HAS_NUTRIENT", "to": "nutrient_fiber"}, {"arrows": "to", "from": "ingredient_broccoli", "title": "HAS_NUTRIENT", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_rice", "title": "HAS_NUTRIENT", "to": "nutrient_carbohydrates"}, {"arrows": "to", "from": "ingredient_rice", "title": "HAS_NUTRIENT", "to": "nutrient_energy"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -50, "centralGravity": 0.01, "springLength": 100, "springConstant": 0.08}, "maxVelocity": 50, "solver": "forceAtlas2Based", "timestep": 0.35, "stabilization": {"iterations": 150}}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

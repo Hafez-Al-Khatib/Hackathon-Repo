@@ -1,0 +1,127 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#ff6b6b", "id": "meal_0", "label": "Meal 1", "shape": "dot", "title": "Meal: Meal 1"}, {"color": "#4ecdc4", "id": "ingredient_avocado", "label": "Avocado", "shape": "dot", "title": "Ingredient: Avocado"}, {"color": "#95e1d3", "id": "nutrient_healthy_fats", "label": "Healthy Fats", "shape": "dot", "title": "Nutrient: Healthy Fats"}, {"color": "#95e1d3", "id": "nutrient_fiber", "label": "Fiber", "shape": "dot", "title": "Nutrient: Fiber"}, {"color": "#4ecdc4", "id": "ingredient_cherry_tomatoes", "label": "Cherry Tomatoes", "shape": "dot", "title": "Ingredient: Cherry Tomatoes"}, {"color": "#95e1d3", "id": "nutrient_vitamin_c", "label": "Vitamin C", "shape": "dot", "title": "Nutrient: Vitamin C"}, {"color": "#95e1d3", "id": "nutrient_antioxidants", "label": "Antioxidants", "shape": "dot", "title": "Nutrient: Antioxidants"}, {"color": "#4ecdc4", "id": "ingredient_cucumber", "label": "Cucumber", "shape": "dot", "title": "Ingredient: Cucumber"}, {"color": "#95e1d3", "id": "nutrient_hydration", "label": "Hydration", "shape": "dot", "title": "Nutrient: Hydration"}, {"color": "#95e1d3", "id": "nutrient_vitamin_k", "label": "Vitamin K", "shape": "dot", "title": "Nutrient: Vitamin K"}, {"color": "#ffe66d", "id": "log_0", "label": "Log 1\n(positive)", "shape": "dot", "title": "UserLog: Log 1\n(positive)"}, {"color": "#a8dadc", "id": "symptom_high_energy", "label": "High Energy", "shape": "dot", "title": "Symptom: High Energy"}, {"color": "#ffe66d", "id": "log_1", "label": "Log 2\n(negative)", "shape": "dot", "title": "UserLog: Log 2\n(negative)"}, {"color": "#a8dadc", "id": "symptom_bloated", "label": "Bloated", "shape": "dot", "title": "Symptom: Bloated"}, {"color": "#ff6b6b", "id": "meal_1", "label": "Meal 2", "shape": "dot", "title": "Meal: Meal 2"}, {"color": "#4ecdc4", "id": "ingredient_cheese", "label": "Cheese", "shape": "dot", "title": "Ingredient: Cheese"}, {"color": "#95e1d3", "id": "nutrient_protein", "label": "Protein", "shape": "dot", "title": "Nutrient: Protein"}, {"color": "#95e1d3", "id": "nutrient_calcium", "label": "Calcium", "shape": "dot", "title": "Nutrient: Calcium"}, {"color": "#95e1d3", "id": "nutrient_fat", "label": "Fat", "shape": "dot", "title": "Nutrient: Fat"}, {"color": "#4ecdc4", "id": "ingredient_tomato_sauce", "label": "Tomato Sauce", "shape": "dot", "title": "Ingredient: Tomato Sauce"}, {"color": "#95e1d3", "id": "nutrient_lycopene", "label": "Lycopene", "shape": "dot", "title": "Nutrient: Lycopene"}, {"color": "#4ecdc4", "id": "ingredient_dough", "label": "Dough", "shape": "dot", "title": "Ingredient: Dough"}, {"color": "#95e1d3", "id": "nutrient_carbohydrates", "label": "Carbohydrates", "shape": "dot", "title": "Nutrient: Carbohydrates"}, {"color": "#ffe66d", "id": "log_2", "label": "Log 3\n(negative)", "shape": "dot", "title": "UserLog: Log 3\n(negative)"}, {"color": "#ffe66d", "id": "log_3", "label": "Log 4\n(negative)", "shape": "dot", "title": "UserLog: Log 4\n(negative)"}, {"color": "#a8dadc", "id": "symptom_sluggish", "label": "Sluggish", "shape": "dot", "title": "Symptom: Sluggish"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "meal_0", "label": "contains", "to": "ingredient_avocado"}, {"arrows": "to", "from": "meal_0", "label": "contains", "to": "ingredient_cherry_tomatoes"}, {"arrows": "to", "from": "meal_0", "label": "contains", "to": "ingredient_cucumber"}, {"arrows": "to", "from": "meal_0", "label": "2.0h after meal", "to": "log_0"}, {"arrows": "to", "from": "meal_0", "label": "2.0h after meal", "to": "log_1"}, {"arrows": "to", "from": "ingredient_avocado", "label": "has nutrient", "to": "nutrient_healthy_fats"}, {"arrows": "to", "from": "ingredient_avocado", "label": "has nutrient", "to": "nutrient_fiber"}, {"arrows": "to", "from": "ingredient_cherry_tomatoes", "label": "has nutrient", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_cherry_tomatoes", "label": "has nutrient", "to": "nutrient_antioxidants"}, {"arrows": "to", "from": "ingredient_cucumber", "label": "has nutrient", "to": "nutrient_hydration"}, {"arrows": "to", "from": "ingredient_cucumber", "label": "has nutrient", "to": "nutrient_vitamin_k"}, {"arrows": "to", "from": "log_0", "label": "experienced", "to": "symptom_high_energy"}, {"arrows": "to", "from": "log_1", "label": "experienced", "to": "symptom_bloated"}, {"arrows": "to", "from": "meal_1", "label": "contains", "to": "ingredient_cheese"}, {"arrows": "to", "from": "meal_1", "label": "contains", "to": "ingredient_tomato_sauce"}, {"arrows": "to", "from": "meal_1", "label": "contains", "to": "ingredient_dough"}, {"arrows": "to", "from": "meal_1", "label": "2.0h after meal", "to": "log_2"}, {"arrows": "to", "from": "meal_1", "label": "2.0h after meal", "to": "log_3"}, {"arrows": "to", "from": "ingredient_cheese", "label": "has nutrient", "to": "nutrient_protein"}, {"arrows": "to", "from": "ingredient_cheese", "label": "has nutrient", "to": "nutrient_calcium"}, {"arrows": "to", "from": "ingredient_cheese", "label": "has nutrient", "to": "nutrient_fat"}, {"arrows": "to", "from": "ingredient_tomato_sauce", "label": "has nutrient", "to": "nutrient_vitamin_c"}, {"arrows": "to", "from": "ingredient_tomato_sauce", "label": "has nutrient", "to": "nutrient_lycopene"}, {"arrows": "to", "from": "ingredient_dough", "label": "has nutrient", "to": "nutrient_carbohydrates"}, {"arrows": "to", "from": "log_2", "label": "experienced", "to": "symptom_bloated"}, {"arrows": "to", "from": "log_3", "label": "experienced", "to": "symptom_sluggish"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -50, "centralGravity": 0.01, "springLength": 100, "springConstant": 0.08}, "maxVelocity": 50, "solver": "forceAtlas2Based", "timestep": 0.35, "stabilization": {"iterations": 150}}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

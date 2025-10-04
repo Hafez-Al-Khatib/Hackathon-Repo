@@ -21,7 +21,7 @@ import google.generativeai as genai
 
 # Add prototypes to path to import NutriGraph
 sys.path.insert(0, str(Path(__file__).parent.parent / "prototypes"))
-from graph_test import NutriGraph
+from graph_enhanced import EnhancedNutriGraph as NutriGraph
 
 # Load environment
 load_dotenv(Path(__file__).parent.parent / "prototypes" / ".env")
@@ -33,8 +33,8 @@ if not GOOGLE_API_KEY:
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Initialize models
-vision_model = genai.GenerativeModel('gemini-2.5-flash')
-text_model = genai.GenerativeModel('gemini-2.5-flash')
+vision_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+text_model = genai.GenerativeModel('gemini-2.0-flash-exp')
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -61,6 +61,13 @@ class LogRequest(BaseModel):
     sentiment: Optional[str] = "neutral"
     timestamp: Optional[str] = None
 
+class MoodTextRequest(BaseModel):
+    mood_text: str
+    timestamp: Optional[str] = None
+
+class QuestionRequest(BaseModel):
+    question: str
+
 class LogResponse(BaseModel):
     log_id: str
     symptom: str
@@ -85,6 +92,144 @@ class InsightResponse(BaseModel):
 # ==============================================================================
 # HELPER FUNCTIONS (from prototypes)
 # ==============================================================================
+
+def extract_symptom_from_question(question: str) -> str:
+    """
+    Use LLM to extract the symptom being asked about from a natural language question.
+    
+    Examples:
+        "What causes nausea?" → "Nausea"
+        "What gives me energy?" → "High Energy"
+        "Why do I get headaches?" → "Headache"
+    """
+    llm_prompt = f"""Extract the health symptom or feeling being asked about in this question.
+
+User's question: "{question}"
+
+Return ONLY a valid JSON object with this structure:
+{{"symptom": "symptom name"}}
+
+Examples:
+- "What causes nausea?" → {{"symptom": "Nausea"}}
+- "What gives me energy?" → {{"symptom": "High Energy"}}
+- "Why do I get headaches?" → {{"symptom": "Headache"}}
+- "What makes me tired?" → {{"symptom": "Fatigue"}}
+- "What improves my mood?" → {{"symptom": "Good Mood"}}
+- "What causes stomach pain?" → {{"symptom": "Stomach Pain"}}
+
+Use common medical/health terminology. Be specific.
+Do not include markdown formatting - just the raw JSON."""
+    
+    try:
+        response = text_model.generate_content(llm_prompt)
+        response_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if response_text.startswith("```"):
+            lines = response_text.split('\n')
+            response_text = '\n'.join(lines[1:-1]) if len(lines) > 2 else response_text
+            response_text = response_text.replace("```json", "").replace("```", "").strip()
+        
+        parsed = json.loads(response_text)
+        symptom = parsed.get("symptom", "").strip()
+        
+        if not symptom:
+            raise ValueError("No symptom extracted")
+        
+        return symptom
+        
+    except Exception as e:
+        print(f"[API] Error extracting symptom from question: {str(e)}")
+        # Fallback: try simple keyword matching
+        question_lower = question.lower()
+        if "energy" in question_lower or "energetic" in question_lower:
+            return "High Energy"
+        elif "headache" in question_lower or "migraine" in question_lower:
+            return "Headache"
+        elif "nausea" in question_lower or "nauseous" in question_lower:
+            return "Nausea"
+        elif "mood" in question_lower:
+            return "Good Mood"
+        elif "tired" in question_lower or "fatigue" in question_lower:
+            return "Fatigue"
+        else:
+            return None
+
+
+def parse_mood_text(mood_text: str) -> dict:
+    """
+    Use LLM to parse free-text mood/feeling description into structured data.
+    
+    Returns:
+        {
+            "symptoms": ["symptom1", "symptom2", ...],  # List of identified symptoms/feelings
+            "sentiment": "positive|negative|neutral",  # Overall sentiment
+            "severity": "low|medium|high",  # Intensity of feelings
+            "description": "cleaned description"  # Normalized description
+        }
+    """
+    llm_prompt = f"""Analyze this mood/feeling description from a user and extract structured information.
+
+User's description: "{mood_text}"
+
+Your task:
+1. Identify specific symptoms, feelings, or moods mentioned
+2. Determine the overall sentiment (positive, negative, or neutral)
+3. Assess the severity/intensity (low, medium, or high)
+4. Create a clean, normalized description
+
+Return ONLY a valid JSON object with this exact structure:
+{{
+    "symptoms": ["feeling1", "feeling2", ...],
+    "sentiment": "positive|negative|neutral",
+    "severity": "low|medium|high",
+    "description": "clean description"
+}}
+
+Examples:
+- Input: "feeling great and energized!" → {{"symptoms": ["High Energy", "Good Mood"], "sentiment": "positive", "severity": "high", "description": "Feeling great and energized"}}
+- Input: "slight headache" → {{"symptoms": ["Headache"], "sentiment": "negative", "severity": "low", "description": "Slight headache"}}
+- Input: "a bit tired but ok" → {{"symptoms": ["Fatigue"], "sentiment": "neutral", "severity": "medium", "description": "Feeling a bit tired"}}
+
+Be specific with symptom names. Use common medical/health terms.
+Do not include markdown formatting - just the raw JSON."""
+    
+    try:
+        response = text_model.generate_content(llm_prompt)
+        response_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if response_text.startswith("```"):
+            lines = response_text.split('\n')
+            response_text = '\n'.join(lines[1:-1]) if len(lines) > 2 else response_text
+            response_text = response_text.replace("```json", "").replace("```", "").strip()
+        
+        parsed = json.loads(response_text)
+        
+        # Validate structure
+        if "symptoms" not in parsed or "sentiment" not in parsed:
+            raise ValueError("LLM response missing required fields")
+        
+        # Ensure symptoms is a list
+        if not isinstance(parsed.get("symptoms"), list):
+            parsed["symptoms"] = [parsed.get("symptoms", "Unknown Mood")]
+        
+        # Default values
+        parsed.setdefault("severity", "medium")
+        parsed.setdefault("description", mood_text)
+        parsed.setdefault("sentiment", "neutral")
+        
+        return parsed
+        
+    except Exception as e:
+        print(f"[API] Error parsing mood text with LLM: {str(e)}")
+        # Fallback: treat entire text as a single symptom
+        return {
+            "symptoms": [mood_text.strip().title()],
+            "sentiment": "neutral",
+            "severity": "medium",
+            "description": mood_text.strip()
+        }
 
 def analyze_meal_image(image: Image.Image) -> dict:
     """VLM analyzes meal image and extracts ingredients"""
@@ -202,10 +347,30 @@ async def add_meal(
         
         # Read and process image
         contents = await file.read()
-        image = Image.open(BytesIO(contents))
+        
+        print(f"[API] Processing meal image: {file.filename}")
+        print(f"[API] Content type: {file.content_type}")
+        print(f"[API] File size: {len(contents)} bytes")
+        
+        if len(contents) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+        
+        # Try to open image with better error handling
+        try:
+            image = Image.open(BytesIO(contents))
+            image.verify()  # Verify it's a valid image
+            # Re-open after verify (verify closes the file)
+            image = Image.open(BytesIO(contents))
+            print(f"[API] Image loaded: {image.format} {image.size}")
+        except Exception as img_error:
+            print(f"[API] ERROR opening image: {str(img_error)}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot process image file. Please ensure it's a valid image format (JPG, PNG, etc.). Error: {str(img_error)}"
+            )
         
         # Run the pipeline
-        print(f"[API] Analyzing meal image: {file.filename}")
+        print(f"[API] Analyzing meal image with VLM...")
         ingredients_json = analyze_meal_image(image)
         
         print(f"[API] Found {len(ingredients_json['ingredients'])} ingredients")
@@ -241,7 +406,7 @@ async def add_meal(
 @app.post("/log", response_model=LogResponse)
 async def add_log(log_request: LogRequest):
     """
-    Log a user symptom/feeling.
+    Log a user symptom/feeling (structured input).
     
     This endpoint:
     1. Receives a symptom from the user (e.g., "High Energy", "Headache")
@@ -271,6 +436,54 @@ async def add_log(log_request: LogRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error logging symptom: {str(e)}")
+
+
+@app.post("/log/mood", response_model=dict)
+async def add_mood_log(mood_request: MoodTextRequest):
+    """
+    Log user mood/feeling from free-text description using LLM parsing.
+    
+    This endpoint:
+    1. Receives free-text mood description (e.g., "feeling super energized today!")
+    2. Uses LLM to parse and extract structured symptoms, sentiment, severity
+    3. Adds all identified symptoms to the graph as separate nodes
+    4. Returns parsed information for frontend display
+    """
+    try:
+        timestamp = mood_request.timestamp or datetime.now().isoformat()
+        
+        print(f"[API] Parsing mood text: '{mood_request.mood_text}'")
+        
+        # Use LLM to parse mood text
+        parsed = parse_mood_text(mood_request.mood_text)
+        
+        print(f"[API] Parsed symptoms: {parsed['symptoms']}")
+        print(f"[API] Sentiment: {parsed['sentiment']}, Severity: {parsed['severity']}")
+        
+        # Add each symptom to the graph
+        log_ids = []
+        for symptom in parsed['symptoms']:
+            log_id = graph.add_user_log(
+                symptom=symptom,
+                sentiment=parsed['sentiment'],
+                timestamp=timestamp
+            )
+            log_ids.append(log_id)
+            print(f"[API] Added symptom '{symptom}' to graph: {log_id}")
+        
+        return {
+            "log_ids": log_ids,
+            "symptoms": parsed['symptoms'],
+            "sentiment": parsed['sentiment'],
+            "severity": parsed['severity'],
+            "description": parsed['description'],
+            "timestamp": timestamp,
+            "message": f"Logged {len(parsed['symptoms'])} symptom(s) from your mood!"
+        }
+        
+    except Exception as e:
+        print(f"[API] Error in mood logging: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error logging mood: {str(e)}")
 
 
 @app.get("/insight", response_model=InsightResponse)
@@ -311,6 +524,64 @@ async def get_graph_stats():
     return graph.get_stats()
 
 
+@app.get("/graph/symptoms")
+async def get_graph_symptoms():
+    """Get all symptoms that have been logged"""
+    try:
+        symptoms = graph.get_all_symptoms()
+        return symptoms
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting symptoms: {str(e)}")
+
+
+@app.post("/extract-symptom")
+async def extract_symptom(request: QuestionRequest):
+    """Extract symptom from a natural language question using LLM"""
+    try:
+        print(f"[API] Extracting symptom from question: '{request.question}'")
+        
+        symptom = extract_symptom_from_question(request.question)
+        
+        if not symptom:
+            raise HTTPException(status_code=400, detail="Could not identify symptom from question")
+        
+        print(f"[API] Extracted symptom: '{symptom}'")
+        
+        return {"symptom": symptom, "question": request.question}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[API] Error extracting symptom: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error extracting symptom: {str(e)}")
+
+
+@app.get("/symptoms/{symptom}/frequency")
+async def get_symptom_frequency(symptom: str):
+    """Get how many times a specific symptom was experienced"""
+    try:
+        count = graph.get_symptom_frequency(symptom)
+        return {
+            "symptom": symptom,
+            "frequency": count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting frequency: {str(e)}")
+
+
+@app.get("/symptoms/{symptom}/co-occurring")
+async def get_co_occurring_symptoms(symptom: str):
+    """Find symptoms that often occur together with the given symptom"""
+    try:
+        co_symptoms = graph.get_co_occurring_symptoms(symptom)
+        return {
+            "symptom": symptom,
+            "co_occurring": [{"symptom": s, "count": c} for s, c in co_symptoms]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting co-occurring symptoms: {str(e)}")
+
+
 @app.post("/graph/visualize")
 async def create_visualization():
     """Generate an interactive graph visualization"""
@@ -327,19 +598,57 @@ async def create_visualization():
         raise HTTPException(status_code=500, detail=f"Error creating visualization: {str(e)}")
 
 
+@app.get("/graph/html")
+async def get_graph_html():
+    """Get the HTML content of the latest graph visualization"""
+    try:
+        # Always regenerate to show latest data
+        viz_path = Path(__file__).parent / "latest_graph_viz.html"
+        
+        print(f"[API] Generating graph visualization...")
+        print(f"[API] Current graph stats: {graph.get_stats()}")
+        
+        # Generate visualization
+        graph.visualize(str(viz_path))
+        
+        print(f"[API] Visualization saved to: {viz_path}")
+        
+        # Read HTML content
+        with open(viz_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        print(f"[API] HTML content size: {len(html_content)} bytes")
+        
+        return JSONResponse(content={
+            "html": html_content,
+            "stats": graph.get_stats()
+        })
+    except Exception as e:
+        print(f"[API] ERROR generating visualization: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error getting graph HTML: {str(e)}")
+
+
 # ==============================================================================
 # STARTUP
 # ==============================================================================
 
 if __name__ == "__main__":
     import uvicorn
+    import sys
+    
+    # Fix console encoding for Windows
+    if sys.platform == 'win32':
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     
     print("=" * 80)
-    print("🚀 NUTRIGRAPH API SERVER")
+    print("NUTRIGRAPH API SERVER")
     print("=" * 80)
-    print(f"\n📊 Initial Graph Stats: {graph.get_stats()}")
-    print("\n🌐 Starting server on http://localhost:8000")
-    print("📖 API docs available at http://localhost:8000/docs")
+    print(f"\nInitial Graph Stats: {graph.get_stats()}")
+    print("\nStarting server on http://localhost:8000")
+    print("API docs available at http://localhost:8000/docs")
     print("\n" + "=" * 80 + "\n")
     
     uvicorn.run(app, host="0.0.0.0", port=8000)

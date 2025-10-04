@@ -1,0 +1,45 @@
+# Virtual environments
+venv/
+venv311/
+backend/venv/
+frontend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Cache
+embeddings_cache/
+*.pkl
+
+# Environment
+.env
+.env.local
+
+# Graph data (will be generated)
+*.html
+graph_data/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
